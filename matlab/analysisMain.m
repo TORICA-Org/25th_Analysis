@@ -49,28 +49,34 @@ windInfo = getWindFromFlightData(tempT);
 
 disp(windInfo);
 
-
-% 1. サンプルデータの準備 (フライトログから得られたと仮定)
-% 始点の緯度と経度
-lat = windInfo.latitude;
-lon = windInfo.longitude;
-
-% 風速ベクトルの成分 (V_N_w:南北成分, V_E_w:東西成分)
-v_north = windInfo.V_N_w;
-u_east  = windInfo.V_E_w;
-
-% 2. 地図座標軸の作成
+% 地図の表示を設定
 figure;
-worldmap('japan'); % 表示領域として日本地図を設定
+title('Wind Data Plot');
+xlabel('Longitude');
+ylabel('Latitude');
+grid on;
 
-% 3. 背景地図の描画
-geoshow('landareas.shp', 'FaceColor', [0.9 0.9 0.7]); % 陸地を色付け
+% 経路をプロット
+geoplot(windInfo.latitude, windInfo.longitude, '-c', 'LineWidth', 0.5);
 
-framem on; % 地図の枠線を表示
+% プロットを保持
+hold on;
 
-% 4. ベクトル矢印の描画
-% quiverm(緯度, 経度, V成分(南北), U成分(東西), スケール, 'プロパティ', 値)
-% 引数の順番が V(南北) -> U(東西) である点に注意してください。
-quiverm(lat, lon, v_north, u_east, 1.5, 'Color', 'r', 'LineWidth', 1.5);
+% 行数を取得
+numRows = height(windInfo);
 
-title('フライトログに基づく風ベクトル');
+for i = 1:numRows
+    
+    % 1. サンプルデータの準備 (フライトログから得られたと仮定)
+    % 始点の緯度と経度
+    lat = windInfo{i, "latitude"};
+    lon = windInfo{i, "longitude"};
+
+    % 風速ベクトルの成分 (V_N_w:南北成分, V_E_w:東西成分)
+    v_north = windInfo{i, "V_N_w"};
+    u_east  = windInfo{i, "V_E_w"};
+
+    % 風上を指すベクトルをプロット
+    drawArrowOnMap(lat, lon, v_north, u_east);
+
+end

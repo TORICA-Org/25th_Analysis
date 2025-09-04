@@ -50,7 +50,7 @@ function wind_table = getWindFromFlightData(flight_table)
     cy = cosd(yaw);   sy = sind(yaw);
     
     % 横滑り角の符号を反転
-    aos = -aos;
+    % aos = -aos;
     
     caoa = cosd(aoa); saoa = sind(aoa);
     caos = cosd(aos); saos = sind(aos);
@@ -75,7 +75,7 @@ function wind_table = getWindFromFlightData(flight_table)
     %   [V_D_ac]     [W]
 
 
-    % --- 3. 風速ベクトルを計算 ---
+    % --- 3. 風上を指すベクトルを計算 ---
     V_N_w = V_N_ac - velN;
     V_E_w = V_E_ac - velE;
     V_D_w = V_D_ac - velD;
@@ -83,9 +83,8 @@ function wind_table = getWindFromFlightData(flight_table)
     WINDSPEED = sqrt(V_N_w.^2 + V_E_w.^2 + V_D_w.^2);
     
     % --- 4. 風向を計算 ---
-    % atan2d(Y,X)を使い、風が「向かう」角度を計算
-    % 180を足して風が「吹いてくる」角度に変換し、0-360度に正規化
-    WindDirection = mod(180 + atan2d(V_E_w, V_N_w), 360);
+    % atan2d(Y,X)を使い、風上を指すベクトルの角度を計算
+    WindDirection = mod(atan2d(V_E_w, V_N_w), 360);
     
     % --- 5. 結果をテーブルに格納して出力 ---
     wind_table = table(latitude, longitude, V_N_w, V_E_w, V_D_w, WINDSPEED, WindDirection);
