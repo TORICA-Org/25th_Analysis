@@ -18,7 +18,7 @@ function wind_table = getWindFromFlightData(flight_table)
 %     .Roll, .Pitch, .Yaw      (度)
 %     .AirSpeed                (m/s)
 %     .AoA, .AoS               (度)
-%     .GSx, .GSy, .GSz         (地理座標系(NED)での対地速度 m/s)
+%     .V_E_g, .V_N_g, .V_D_g   (地理座標系(NED)での対地速度 m/s)
 %
 % Outputs:
 %   wind_table - 以下の変数を含むテーブル
@@ -36,15 +36,18 @@ function wind_table = getWindFromFlightData(flight_table)
     aoa      = flight_table.AoA;
     aos      = flight_table.AoS;
     
-    velN = flight_table.GSx; % 対地速度 北(+)
-    velE = flight_table.GSy; % 対地速度 東(+)
-    velD = flight_table.GSz; % 対地速度 下(+)
+    velN = flight_table.V_N_g; % 対地速度 北(+)
+    velE = flight_table.V_E_g; % 対地速度 東(+)
+    velD = flight_table.V_D_g; % 対地速度 下(+)
 
     % --- 2. 対気速度を機体座標系から地理座標系(NED)へ変換 ---
     
     % Python版の定義に従い、crとsrを定義
-    cr = cosd(-roll);
-    sr = sind(-roll);
+    %cr = cosd(-roll);
+    %sr = sind(-roll);
+
+    cr = cosd(roll);
+    sr = sind(roll);
     
     cp = cosd(pitch); sp = sind(pitch);
     cy = cosd(yaw);   sy = sind(yaw);
@@ -57,13 +60,14 @@ function wind_table = getWindFromFlightData(flight_table)
 
     % 機体座標系での対気速度成分
     U = airspeed .* caoa .* caos; % 前方
-    V = airspeed .* caoa .* saos; % 右方
+    % V = airspeed .* caoa .* saos; % 右方
+    V = airspeed .* saos; % 右方
     W = airspeed .* saoa .* caos; % 下方
 
     % 機体座標系 -> 地理座標系(NED)への回転行列を定義
-    V_N_ac = (cp.*cy).*U + (sr.*sp.*cy - cr.*sy).*V + (cr.*sp.*cy + sr.*sy).*W;
-    V_E_ac = (cp.*sy).*U + (sr.*sp.*sy + cr.*cy).*V + (cr.*sp.*sy - sr.*cy).*W;
-    V_D_ac = (-sp)   .*U + (sr.*cp)             .*V + (cr.*cp)             .*W;
+    V_N_a = (cp.*cy).*U + (sr.*sp.*cy - cr.*sy).*V + (cr.*sp.*cy + sr.*sy).*W;
+    V_E_a = (cp.*sy).*U + (sr.*sp.*sy + cr.*cy).*V + (cr.*sp.*sy - sr.*cy).*W;
+    V_D_a = (-sp)   .*U + (sr.*cp)             .*V + (cr.*cp)             .*W;
 
 
     %       [cy  -sy   0] ( [cp    0   sp] [1    0     0] )
@@ -76,9 +80,9 @@ function wind_table = getWindFromFlightData(flight_table)
 
 
     % --- 3. 風上を指すベクトルを計算 ---
-    V_N_w = V_N_ac - velN;
-    V_E_w = V_E_ac - velE;
-    V_D_w = V_D_ac - velD;
+    V_N_w = V_N_a - velN;
+    V_E_w = V_E_a - velE;
+    V_D_w = V_D_a - velD;
     
     WINDSPEED = sqrt(V_N_w.^2 + V_E_w.^2 + V_D_w.^2);
     

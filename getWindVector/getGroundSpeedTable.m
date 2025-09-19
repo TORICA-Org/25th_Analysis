@@ -6,9 +6,9 @@ function outputT = getGroundSpeedTable(inputT)
     % 対地速度計算用テーブルを初期化
     sz = [100 8];
     verTypes = ["double", "double", "double", "double", "double", "double", "double", "double"];
-    varNames = ["Time", "Latitude", "Longitude", "Altitude", "DeltaX", "DeltaY", "DeltaZ", "DeltaDistance"];
+    varNames = ["Time", "Latitude", "Longitude", "Altitude", "DeltaN", "DeltaE", "DeltaD", "DeltaDistance"];
     tempT = table('Size', sz, 'VariableTypes', verTypes, 'VariableNames', varNames);
-    
+
     loopCount = 0;
     lastTime = 0;
     lastLatitude = 0;
@@ -35,10 +35,10 @@ function outputT = getGroundSpeedTable(inputT)
             loopCount = loopCount + 1;
     
             % 新しい行を生成
-            tempRow = table(currentTime, latitude, longitude, altitude);
-    
-            % 新しい行をtempTに追加
-            tempT(loopCount, 1:4) = tempRow;
+            tempT{i, "Time"} = currentTime;
+            tempT{i, "Latitude"} = latitude;
+            tempT{i, "Longitude"} = longitude;
+            tempT{i, "Altitude"} = altitude;
     
             % 次回比較で使用
             lastTime = currentTime;
@@ -57,9 +57,9 @@ function outputT = getGroundSpeedTable(inputT)
     
     
     tempT{1, "DeltaDistance"} = 0;
-    tempT{1, "DeltaX"} = 0;
-    tempT{1, "DeltaY"} = 0;
-    tempT{1, "DeltaZ"} = 0;
+    tempT{1, "DeltaN"} = 0;
+    tempT{1, "DeltaE"} = 0;
+    tempT{1, "DeltaD"} = 0;
     
     
     % 行数を取得
@@ -67,7 +67,7 @@ function outputT = getGroundSpeedTable(inputT)
     
     for i = 2:numRows
     
-        [x, y, z, d] = calculateDistance( ...
+        [n, e, d, dis] = calculateDistance( ...
             tempT{i-1, "Latitude"}, ...
             tempT{i-1, "Longitude"}, ...
             tempT{i-1, "Altitude"}, ...
@@ -75,10 +75,10 @@ function outputT = getGroundSpeedTable(inputT)
             tempT{i, "Longitude"} - tempT{i-1, "Longitude"}, ...
             (tempT{i, "Altitude"} - tempT{i-1, "Altitude"})*(-1) ... % 下方向が正
         );
-        tempT{i, "DeltaX"} = x;
-        tempT{i, "DeltaY"} = y;
-        tempT{i, "DeltaZ"} = z;
-        tempT{i, "DeltaDistance"} = d;
+        tempT{i, "DeltaN"} = n;
+        tempT{i, "DeltaE"} = e;
+        tempT{i, "DeltaD"} = d;
+        tempT{i, "DeltaDistance"} = dis;
         
     end
     
@@ -89,7 +89,7 @@ function outputT = getGroundSpeedTable(inputT)
     % 対地速度出力用テーブルを初期化
     sz = [100 8];
     verTypes = ["double", "double", "double", "double", "double", "double", "double", "double"];
-    varNames = ["Time", "MidLatitude", "MidLongitude", "MidAltitude", "GSx", "GSy", "GSz", "GroundSpeed"];
+    varNames = ["Time", "MidLatitude", "MidLongitude", "MidAltitude", "V_N_g", "V_E_g", "V_D_g", "GroundSpeed"];
     outputT = table('Size', sz, 'VariableTypes', verTypes, 'VariableNames', varNames);
     
     outputT{1, {'MidLatitude', 'MidLongitude', 'MidAltitude'}} = tempT{1, {'Latitude', 'Longitude', 'Altitude'}};
@@ -111,12 +111,13 @@ function outputT = getGroundSpeedTable(inputT)
         % 測定点の中点の高度
         outputT{i, "MidAltitude"} = (tempT{i, "Altitude"} + tempT{i-1, "Altitude"}) / 2;
     
-        % 東西方向の推定対地速度
-        outputT{i, "GSx"} = tempT{i, "DeltaX"} / deltaTime;
+
         % 南北方向の推定対地速度
-        outputT{i, "GSy"} = tempT{i, "DeltaY"} / deltaTime;
+        outputT{i, "V_N_g"} = tempT{i, "DeltaN"} / deltaTime;
+        % 東西方向の推定対地速度
+        outputT{i, "V_E_g"} = tempT{i, "DeltaE"} / deltaTime;
         % 上下方向の推定対地高度
-        outputT{i, "GSz"} = tempT{i, "DeltaZ"} / deltaTime;
+        outputT{i, "V_D_g"} = tempT{i, "DeltaD"} / deltaTime;
         % 中点の推定対地速度
         outputT{i, "GroundSpeed"} = tempT{i, "DeltaDistance"} / deltaTime;
     

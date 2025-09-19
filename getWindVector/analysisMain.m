@@ -13,9 +13,9 @@ groundSpeedT = getGroundSpeedTable(srcT);
 % disp(groundSpeedT);
 
 % 風向ベクトル計算用テーブルを初期化
-sz = [100 13];
-verTypes = ["double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"];
-varNames = ["Time", "Latitude", "Longitude", "Altitude", "Roll", "Pitch", "Yaw", "AirSpeed", "AoA", "AoS", "GSx", "GSy", "GSz"];
+sz = [100 14];
+verTypes = ["double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"];
+varNames = ["Time", "Latitude", "Longitude", "Altitude", "Roll", "Pitch", "Yaw", "AirSpeed", "AoA", "AoS", "V_N_g", "V_E_g", "V_D_g", "GroundSpeed"];
 tempT = table('Size', sz, 'VariableTypes', verTypes, 'VariableNames', varNames);
 
 % 行数を取得
@@ -31,22 +31,33 @@ for i = 1:numRows
 
     % 取得した行のインデックスから必要な列をコピー
     tempT{i, {'Time', 'Roll', 'Pitch', 'Yaw', 'AirSpeed', 'AoA', 'AoS'}} = srcT{closestRowIndex, {'time', 'bno_roll', 'bno_pitch', 'bno_yaw', 'data_air_sdp_airspeed_ms', 'data_air_AoA_angle_deg', 'data_air_AoS_angle_deg'}};
-    tempT{i, {'Latitude', 'Longitude', 'Altitude', 'GSx', 'GSy', 'GSz'}} = groundSpeedT{i, {'MidLatitude', 'MidLongitude', 'MidAltitude', 'GSx', 'GSy', 'GSz'}};
+    tempT{i, {'Latitude', 'Longitude', 'Altitude', 'V_N_g', 'V_E_g', 'V_D_g', 'GroundSpeed'}} = groundSpeedT{i, {'MidLatitude', 'MidLongitude', 'MidAltitude', 'V_N_g', 'V_E_g', 'V_D_g', 'GroundSpeed'}};
 
 end
 
 % 余分な行を削除
 tempT(numRows+1:height(tempT), :) = [];
 
-% disp(tempT);
-
 tempT(:, "AoA") = tempT(:, "AoA") - 103.8 - 9.2;
 tempT(:, "AoS") = tempT(:, "AoS") - 312.36;
 
-% disp(tempT);
+% テーブルを表示
+disp(tempT);
+
+% テーブルをCSVに書き出す
+writetable(tempT, "output/FlightLog.csv");
+
+hold on;
+plot(tempT.Time, tempT.AirSpeed, "Color", "b");
+plot(tempT.Time, tempT.GroundSpeed, "Color", "g");
+legend("AirSpeed", "GroundSpeed");
+xlabel("Time [s]");
+ylabel("Speed [m/s]");
+hold off;
 
 windInfo = getWindFromFlightData(tempT);
 
+% テーブルを表示
 disp(windInfo);
 
 % 地図の表示を設定
@@ -67,7 +78,6 @@ numRows = height(windInfo);
 
 for i = 1:numRows
     
-    % 1. サンプルデータの準備 (フライトログから得られたと仮定)
     % 始点の緯度と経度
     lat = windInfo{i, "latitude"};
     lon = windInfo{i, "longitude"};
