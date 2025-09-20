@@ -1,24 +1,31 @@
 % 表示形式を設定
 format long;
 
-% csvファイルをテーブルとして読み込む
-% VariableNamingRuleをpreservenに設定し，元ファイルのヘッダーを変数にする
-srcT = readtable("src/2024Flight_anl_input.csv", 'VariableNamingRule', 'preserve');
+[file, path] = uigetfile('*.csv');
+
+if isequal(file, 0)
+    disp('キャンセルされました．');
+else
+    fullpath = fullfile(path, file);
+    % csvファイルをテーブルとして読み込む
+    % VariableNamingRuleをpreservenに設定し，元ファイルのヘッダーを変数にする
+    srcT = readtable(fullpath, 'VariableNamingRule', 'preserve');
+    file = strrep(file, '.csv', '');
+    disp(append("path: ", path));
+    disp(append("file:" + file));
+end
 
 % データのプロット
-PATH = "output/";
-TITLE = "Ray";
 
-%{
 s = "Altitude";
 if ismember(s, srcT.Properties.VariableNames)
     f = figure;
     plot(srcT.Time, srcT.(s));
     xlabel('Time');
     ylabel(s);
-    title(TITLE);
+    title(file, 'Interpreter', 'none');
     grid on;
-    exportgraphics(f, PATH + TITLE + "_" + s + ".png");
+    exportgraphics(f, append("output/", file, "_" , s, ".png"));
 end
 
 s = "Airspeed";
@@ -27,9 +34,9 @@ if ismember(s, srcT.Properties.VariableNames)
     plot(srcT.Time, srcT.(s));
     xlabel('Time');
     ylabel(s);
-    title(TITLE);
+    title(file, 'Interpreter', 'none');
     grid on;
-    exportgraphics(f, PATH + TITLE + "_" + s + ".png");
+    exportgraphics(f, append("output/", file, "_" , s, ".png"));
 end
 
 s = "Roll";
@@ -38,9 +45,9 @@ if ismember(s, srcT.Properties.VariableNames)
     plot(srcT.Time, srcT.(s));
     xlabel('Time');
     ylabel(s);
-    title(TITLE);
+    title(file, 'Interpreter', 'none');
     grid on;
-    exportgraphics(f, PATH + TITLE + "_" + s + ".png");
+    exportgraphics(f, append("output/", file, "_" , s, ".png"));
 end
 
 s = "Pitch";
@@ -49,9 +56,9 @@ if ismember(s, srcT.Properties.VariableNames)
     plot(srcT.Time, srcT.(s));
     xlabel('Time');
     ylabel(s);
-    title(TITLE);
+    title(file, 'Interpreter', 'none');
     grid on;
-    exportgraphics(f, PATH + TITLE + "_" + s + ".png");
+    exportgraphics(f, append("output/", file, "_" , s, ".png"));
 end
 
 s = "Yaw";
@@ -60,9 +67,9 @@ if ismember(s, srcT.Properties.VariableNames)
     plot(srcT.Time, srcT.(s));
     xlabel('Time');
     ylabel(s);
-    title(TITLE);
+    title(file, 'Interpreter', 'none');
     grid on;
-    exportgraphics(f, PATH + TITLE + "_" + s + ".png");
+    exportgraphics(f, append("output/", file, "_" , s, ".png"));
 end
 
 s = "Rudder";
@@ -71,9 +78,9 @@ if ismember(s, srcT.Properties.VariableNames)
     plot(srcT.Time, srcT.(s));
     xlabel('Time');
     ylabel(s);
-    title(TITLE);
+    title(file, 'Interpreter', 'none');
     grid on;
-    exportgraphics(f, PATH + TITLE + "_" + s + ".png");
+    exportgraphics(f, append("output/", file, "_" , s, ".png"));
 end
 
 s = "AoS";
@@ -82,11 +89,10 @@ if ismember(s, srcT.Properties.VariableNames)
     plot(srcT.Time, srcT.(s));
     xlabel('Time');
     ylabel(s);
-    title(TITLE);
+    title(file, 'Interpreter', 'none');
     grid on;
-    exportgraphics(f, PATH + TITLE + "_" + s + ".png");
+    exportgraphics(f, append("output/", file, "_" , s, ".png"));
 end
-%}
 
 if (ismember('Latitude', srcT.Properties.VariableNames) && ismember('Longitude', srcT.Properties.VariableNames))
     Time = srcT.Time;
@@ -121,7 +127,7 @@ if (ismember('Latitude', srcT.Properties.VariableNames) && ismember('Longitude',
     % WGS84楕円体を定義
     wgs84 = wgs84Ellipsoid('m');
 
-    % 距離を計算
+    % 直線距離を計算
     dis = distance(lat1, lon1, lat2, lon2, wgs84);
 
     f = figure;
@@ -129,7 +135,34 @@ if (ismember('Latitude', srcT.Properties.VariableNames) && ismember('Longitude',
     plot(thinned_T.Time, dis);
     xlabel("Time");
     ylabel(s);
-    title(TITLE);
+    title(file, 'Interpreter', 'none');
     grid on;
-    exportgraphics(f, PATH + TITLE + "_" + s + ".png");
+    exportgraphics(f, append("output/", file, "_" , s, ".png"));
+    
+    % 緯度経度の配列
+    thinned_lat = thinned_T.Latitude;
+    thinned_lon = thinned_T.Longitude;
+
+    lat1 = thinned_lat(1:end-1);
+    lon1 = thinned_lon(1:end-1);
+
+    lat2 = thinned_lat(2:end);
+    lon2 = thinned_lon(2:end);
+
+    % WGS84楕円体を定義
+    wgs84 = wgs84Ellipsoid('m');
+
+    % 区間距離を計算
+    dis = distance(lat1, lon1, lat2, lon2, wgs84);
+
+    cumulative_dis = [0; cumsum(dis)];
+
+    f = figure;
+    s = "CumulativeDistance";
+    plot(thinned_T.Time, cumulative_dis);
+    xlabel("Time");
+    ylabel(s);
+    title(file, 'Interpreter', 'none');
+    grid on;
+    exportgraphics(f, append("output/", file, "_" , s, ".png"));
 end
