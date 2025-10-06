@@ -1,4 +1,4 @@
-function drawArrowOnMap(lat, lon, Nvec, Evec)
+function drawArrowOnMap(lat, lon, Nvec, Evec, Option)
 
     scale = 0.0001;
 
@@ -7,7 +7,7 @@ function drawArrowOnMap(lat, lon, Nvec, Evec)
     lat2 = lat + scale * Nvec; 
     lon2 = lon + scale * Evec;
 
-    geoplot([lat1, lat2], [lon1, lon2], 'y-', 'LineWidth', 1.0);
+    geoplot([lat1, lat2], [lon1, lon2], Option, 'LineWidth', 1.0);
 
     % 現在のプロットを保持
     hold on;
@@ -31,8 +31,8 @@ function drawArrowOnMap(lat, lon, Nvec, Evec)
     [lat_h2, lon_h2] = reckon(lat2, lon2, arrowhead_length_deg, az2);
 
     % 4. 矢じりを描画
-    geoplot([lat2, lat_h1], [lon2, lon_h1], 'y-', 'LineWidth', 1.0);
-    geoplot([lat2, lat_h2], [lon2, lon_h2], 'y-', 'LineWidth', 1.0);
+    geoplot([lat2, lat_h1], [lon2, lon_h1], Option, 'LineWidth', 1.0);
+    geoplot([lat2, lat_h2], [lon2, lon_h2], Option, 'LineWidth', 1.0);
     
     hold on;
 

@@ -2,9 +2,11 @@ function outputT = getGroundSpeedTable(inputT)
 
     % 行数を取得
     numRows = height(inputT);
+
+    %disp(inputT);
     
     % 対地速度計算用テーブルを初期化
-    sz = [100 8];
+    sz = [numRows 8];
     verTypes = ["double", "double", "double", "double", "double", "double", "double", "double"];
     varNames = ["Time", "Latitude", "Longitude", "Altitude", "DeltaN", "DeltaE", "DeltaD", "DeltaDistance"];
     tempT = table('Size', sz, 'VariableTypes', verTypes, 'VariableNames', varNames);
@@ -24,27 +26,33 @@ function outputT = getGroundSpeedTable(inputT)
         longitude = inputT{i, 'data_main_gps_longitude_deg'};
 
         % 高度を取得
-        altitude = inputT{i, 'estimated_altitude_lake_m'};
+        altitude = inputT{i, 'true_alt'};
     
         % 初回，または前回と異なりかつ0.8秒以上の間隔がある場合
         % GPSのデータレートは今回1spsだが，取得と保存のためにそれ以上の時間がかかっている
         % そのため，1秒毎に刻むとずれが蓄積しデータを飛ばしてしまうため，0.8秒ごとに刻む
         if (i == 1 || ((latitude ~= lastLatitude || longitude ~= lastLongitude) && currentTime - lastTime >= 0.8))
-    
+
             % ループした回数を加算
             loopCount = loopCount + 1;
-    
+
             % 新しい行を生成
-            tempT{i, "Time"} = currentTime;
-            tempT{i, "Latitude"} = latitude;
-            tempT{i, "Longitude"} = longitude;
-            tempT{i, "Altitude"} = altitude;
-    
+            tempT{loopCount, "Time"} = currentTime;
+            tempT{loopCount, "Latitude"} = latitude;
+            tempT{loopCount, "Longitude"} = longitude;
+            tempT{loopCount, "Altitude"} = altitude;
+
+            % エラー回避のためNaNを代入
+            tempT{loopCount, "DeltaN"} = NaN;
+            tempT{loopCount, "DeltaE"} = NaN;
+            tempT{loopCount, "DeltaD"} = NaN;
+            tempT{loopCount, "DeltaDistance"} = NaN;
+
             % 次回比較で使用
             lastTime = currentTime;
             lastLatitude = latitude;
             lastLongitude = longitude;
-    
+
         end
     
     end
@@ -55,6 +63,7 @@ function outputT = getGroundSpeedTable(inputT)
     % 余分な行を削除
     tempT(loopCount+1:numRows, :) = [];
     
+    %disp(tempT);
     
     tempT{1, "DeltaDistance"} = 0;
     tempT{1, "DeltaN"} = 0;
@@ -73,7 +82,7 @@ function outputT = getGroundSpeedTable(inputT)
             tempT{i-1, "Altitude"}, ...
             tempT{i, "Latitude"} - tempT{i-1, "Latitude"}, ...
             tempT{i, "Longitude"} - tempT{i-1, "Longitude"}, ...
-            (tempT{i, "Altitude"} - tempT{i-1, "Altitude"})*(-1) ... % 下方向が正
+            tempT{i, "Altitude"} - tempT{i-1, "Altitude"} ...
         );
         tempT{i, "DeltaN"} = n;
         tempT{i, "DeltaE"} = e;
@@ -87,9 +96,9 @@ function outputT = getGroundSpeedTable(inputT)
     % disp(tempT);
     
     % 対地速度出力用テーブルを初期化
-    sz = [100 8];
-    verTypes = ["double", "double", "double", "double", "double", "double", "double", "double"];
-    varNames = ["Time", "MidLatitude", "MidLongitude", "MidAltitude", "V_N_g", "V_E_g", "V_D_g", "GroundSpeed"];
+    sz = [100 9];
+    verTypes = ["double", "double", "double", "double", "double", "double", "double", "double", "double"];
+    varNames = ["Time", "MidLatitude", "MidLongitude", "MidAltitude", "V_N_g", "V_E_g", "V_D_g", "GroundSpeed", "GroundDirectionAngle"];
     outputT = table('Size', sz, 'VariableTypes', verTypes, 'VariableNames', varNames);
     
     outputT{1, {'MidLatitude', 'MidLongitude', 'MidAltitude'}} = tempT{1, {'Latitude', 'Longitude', 'Altitude'}};
@@ -113,17 +122,24 @@ function outputT = getGroundSpeedTable(inputT)
     
 
         % 南北方向の推定対地速度
-        outputT{i, "V_N_g"} = tempT{i, "DeltaN"} / deltaTime;
+        velN = tempT{i, "DeltaN"} / deltaTime;
+        velE = tempT{i, "DeltaE"} / deltaTime;
+        velD = tempT{i, "DeltaD"} / deltaTime;
+        outputT{i, "V_N_g"} = velN;
         % 東西方向の推定対地速度
-        outputT{i, "V_E_g"} = tempT{i, "DeltaE"} / deltaTime;
+        outputT{i, "V_E_g"} = velE;
         % 上下方向の推定対地高度
-        outputT{i, "V_D_g"} = tempT{i, "DeltaD"} / deltaTime;
+        outputT{i, "V_D_g"} = velD;
         % 中点の推定対地速度
         outputT{i, "GroundSpeed"} = tempT{i, "DeltaDistance"} / deltaTime;
+        % 対地速度ベクトルの方位を計算（北方位0°，東方位90°）
+        outputT{i, "GroundDirectionAngle"} = mod(90 - rad2deg(atan2(velN, velE)), 360);
     
     end
     
     % 余分な行を削除
     outputT(numRows+1:height(outputT), :) = [];
+
+    %disp(outputT);
 
 end

@@ -16,10 +16,20 @@ function [n, e, d, dis] = calculateDistance(lat, lon, alt, deltaLat, deltaLon, d
 
     % 南北方向の距離を計算
     n = distance(lat1, lon1, lat2, lon1, wgs84);
+    if (lat2 < lat1)
+        % 南北方向の距離が負の（南に進む）場合、符号を反転
+        n = -n;
+    end
+
     % 東西方向の距離を計算
     e = distance(lat1, lon1, lat1, lon2, wgs84);
+    if (lon2 < lon1)
+        % 東西方向の距離が負の（西に進む）場合，符号を反転
+        e = -e;
+    end
+
     % 高度方向の距離を計算
-    d = alt2 - alt1;
+    d = alt1 - alt2; % 上昇する場合，距離は負
     
     % 3次元距離を計算
     dis = sqrt(n^2 + e^2 + d^2);
